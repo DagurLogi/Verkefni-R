@@ -1,0 +1,52 @@
+---
+title: "Seinna R verkefni"
+author: "Dagur Logi Ólafsson, dlo4@hi.is"
+date: "7/4/2024"
+output: rmdformats::readthedown
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = F)
+library(tidyverse)
+library(knitr)
+library(lubridate)
+library(dplyr)
+```
+
+#Hluti 1
+
+```{r}
+# a) Lesa inn gagnasafn
+dlo <- read_csv2("https://ahj.hi.is/kaupskra.csv", 
+                 locale = locale(encoding = "ISO8859-1"))
+
+# b) Nota filter til þess að velja fullbúnar byggingar merktar 
+# Fjölbýli og Sérbýli þar sem samningurinn er nothæfur.
+dlo_filtered <- dlo %>%
+  filter(fullbuid == 1,
+         tegund %in% c("Fjolbyli", "Serbyli"),
+         onothaefur_samningur == 0)
+dlo <- dlo_filtered
+
+# c) Búið til breytu sem inniheldur fermetraverð eigna.
+dlo <- dlo %>% 
+  mutate(fermetraverd = floor(kaupverd / einflm))
+
+# d) Búið til breytu með ártali þegar eignin var seld. 
+dlo <- dlo %>% 
+  mutate(ar = year(ymd(utgdag)))
+
+# e) Velja 3 póstnúmer með a.m.k. 200 sérbýli í hverju póstnúmeri.
+#Fyrst filterum við út og sjáum hvaða póst númer eru með 200 eða yfir.
+serbyli_talning <- dlo %>% 
+  filter(tegund == "Serbyli") %>% 
+  count(postnr) %>% 
+  filter(n >= 200)
+#Næst ákveðum við hvaða póst númer við viljum nota.
+selected_postnr <- c("108", "600", "310")
+#Nuna yfirfærum við gaganramman með nýju breytunni.
+dlo <- dlo %>% filter(postnr %in% selected_postnr)
+
+# f) Kanna gerð breyta og breytið ef þarf.
+str(dlo)
+
